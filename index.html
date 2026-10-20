@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#24463F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="دفتر الحسابات">
+<meta name="robots" content="noindex, nofollow">
+<title>دفتر الحسابات | Riferimento و GBS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📒</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ECEEEA;--surface:#FFFFFF;--soft:#E3E7E2;--ink:#1A221F;--muted:#5D6863;--line:#D2D8D2;
+  --brand:#24463F;--brand-ink:#FFFFFF;--in:#1C7350;--out:#A7382C;--rif:#94732A;--gbs:#24463F;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121715;--surface:#1A201E;--soft:#222A27;--ink:#E5EAE7;--muted:#9AA59F;--line:#2D3632;
+    --brand:#7DB3A4;--brand-ink:#0F1513;--in:#5CC092;--out:#E8826F;--rif:#D3B067;--gbs:#7DB3A4;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121715;--surface:#1A201E;--soft:#222A27;--ink:#E5EAE7;--muted:#9AA59F;--line:#2D3632;
+  --brand:#7DB3A4;--brand-ink:#0F1513;--in:#5CC092;--out:#E8826F;--rif:#D3B067;--gbs:#7DB3A4;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Alexandria","Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif;font-size:15px;line-height:1.6;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:20px;letter-spacing:0}
+.brand small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.seg{display:flex;background:var(--soft);border-radius:10px;padding:3px}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:8px;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 0 var(--line)}
+
+main{max-width:760px;margin:0 auto;padding:16px 16px 150px}
+h2.sec{font-size:15px;font-weight:600;margin:28px 0 10px;display:flex;justify-content:space-between;align-items:center}
+.link{border:0;background:none;color:var(--brand);font-size:13px;padding:4px}
+.muted{color:var(--muted)}
+.in{color:var(--in)}.out{color:var(--out)}
+.empty{color:var(--muted);font-size:14px;margin:6px 0}
+
+/* Ledger: the position of the money */
+.ledger{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px}
+.ledger-row{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--muted);padding:2px 0}
+.ledger-row b{font-size:17px;font-weight:600}
+.ledger-net{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);margin-top:10px;padding-top:12px}
+.ledger-net span{font-weight:500}
+.ledger-net strong{font-size:30px;font-weight:700;line-height:1.2}
+.ledger-net small{font-size:13px;font-weight:400;color:var(--muted)}
+.ledger-due{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px}
+.ledger-due b{color:var(--ink);font-weight:600}
+
+/* Dimension line: an architect's way of showing a share of a whole */
+.dim{position:relative;margin:12px 0 8px;padding:5px 0;border-inline:1.5px solid var(--muted)}
+.dim::before{content:"";position:absolute;inset-inline:0;top:50%;border-top:1px dashed var(--line)}
+.dim i{display:block;position:relative;height:5px;max-width:100%}
+.dim i.c{background:var(--in);margin-bottom:3px}
+.dim i.s{background:var(--out)}
+.dim.one i{height:7px;margin:0}
+
+.proj{display:block;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.proj-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.proj-head b{font-weight:600;font-size:16px}
+.proj-head .muted{font-size:13px}
+.proj-nums{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.proj-nums b{font-size:14px;color:var(--ink);font-weight:600;margin-inline-start:3px}
+.proj-nums b.in{color:var(--in)}.proj-nums b.out{color:var(--out)}
+.tag{font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;border:1px solid currentColor}
+.tag.rif{color:var(--rif)}.tag.gbs{color:var(--gbs)}
+.status{font-size:11px;color:var(--muted);background:var(--soft);padding:2px 7px;border-radius:5px}
+
+ul.tx{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+ul.tx li+li{border-top:1px solid var(--line)}
+.tx-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:start;padding:11px 14px}
+.tx-type{font-size:11px;font-weight:600;padding:3px 7px;border-radius:5px;background:var(--soft);white-space:nowrap}
+.tx-main{min-width:0}
+.tx-main b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-main small,.tx-amt small{display:block;font-size:12px;color:var(--muted)}
+.tx-amt{text-align:end;font-weight:600;white-space:nowrap}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.chipbar{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+.chipbar button{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.chipbar button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.search{flex:1;min-width:160px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+
+.primary{background:var(--brand);color:var(--brand-ink);border:0;border-radius:10px;padding:10px 16px;font-weight:600}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 16px}
+.danger{background:transparent;border:1px solid var(--out);color:var(--out);border-radius:10px;padding:10px 16px}
+
+.back{border:0;background:none;color:var(--brand);padding:4px 0;font-size:14px;margin-bottom:6px}
+.ph{margin-bottom:6px}
+.ph h1{font-size:24px;font-weight:700;margin:4px 0 2px;line-height:1.3}
+.ph p{margin:0;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:14px}
+@media (min-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.grid div{background:var(--surface);padding:12px 14px}
+.grid span{display:block;font-size:12px;color:var(--muted)}
+.grid b{font-size:17px;font-weight:600}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:320px}
+th,td{padding:9px 12px;text-align:start;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);font-size:12px}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:end;white-space:nowrap}
+tfoot td{font-weight:600}
+
+.bars{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 14px}
+.bar{padding:9px 0}
+.bar+.bar{border-top:1px solid var(--line)}
+.bar-top{display:flex;justify-content:space-between;font-size:14px}
+.bar-top b{font-weight:600}
+.bar .dim{margin:8px 0 2px}
+
+.note{font-size:12px;color:var(--muted);margin-top:22px;line-height:1.7}
+
+.tabs{position:fixed;bottom:0;inset-inline:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{border:0;background:none;padding:12px 4px 13px;font-size:13px;color:var(--muted);border-top:2px solid transparent}
+.tabs button.on{color:var(--ink);font-weight:600;border-top-color:var(--brand)}
+.fab{position:fixed;z-index:7;inset-inline-end:16px;bottom:calc(64px + env(safe-area-inset-bottom,0px));background:var(--brand);color:var(--brand-ink);border:0;border-radius:14px;padding:13px 18px;font-weight:600;font-size:15px;box-shadow:0 6px 18px rgba(20,40,34,.28)}
+@media (min-width:800px){.fab{inset-inline-end:calc(50% - 364px)}}
+
+dialog{border:0;padding:0;background:var(--surface);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;border-radius:18px 18px 0 0;max-height:92vh;overflow:auto}
+@media (min-width:600px){dialog{margin:auto;border-radius:16px}}
+dialog::backdrop{background:rgba(10,16,14,.45)}
+.form{padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.form h3{margin:0 0 14px;font-size:18px;font-weight:600}
+.f{display:block;margin-bottom:12px}
+.f>span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px}
+.f input.big{font-size:24px;font-weight:600;padding:8px 12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.typechips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;border:0;padding:0}
+.typechips label{position:relative}
+.typechips input{position:absolute;opacity:0;inset:0}
+.typechips span{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:13px}
+.typechips input:checked+span{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.typechips input:focus-visible+span{outline:2px solid var(--brand);outline-offset:2px}
+.actions{display:flex;gap:8px;justify-content:flex-start;margin-top:6px}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 14px;font-size:14px}
+.detail dt{color:var(--muted)}
+.detail dd{margin:0}
+
+.toast{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(130px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.top-tools{display:flex;align-items:center;gap:8px}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:36px;height:34px;font-size:16px;line-height:1;color:var(--ink)}
+.icon-btn[aria-busy="true"]{opacity:.5}
+body.locked .tabs,body.locked .fab,body.locked .top-tools{display:none}
+.gate{max-width:420px;margin:48px auto 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 22px;text-align:center}
+.gate h1{font-size:22px;margin:0 0 6px}
+.gate p{color:var(--muted);font-size:14px;margin:0 0 20px}
+.gate #gbtn{display:flex;justify-content:center;min-height:44px}
+.gate .msg{margin-top:16px;font-size:13px;color:var(--out);min-height:1em}
+.gate .msg.ok{color:var(--muted)}
+.gate code{font-size:12px;background:var(--soft);padding:2px 6px;border-radius:5px;direction:ltr;display:inline-block}
+button[disabled]{opacity:.6;cursor:wait}
+.errbox{background:var(--surface);border:1px solid var(--out);border-radius:12px;padding:16px;color:var(--out);font-size:14px}
+.errbox button{margin-top:10px}
+a.ghost{display:inline-block;text-decoration:none;color:var(--ink)}
+</style>
+</head>
+<body class="locked">
+<header class="top">
+  <div class="top-in">
+    <div class="brand">دفتر الحسابات<small>Riferimento و GBS</small></div>
+    <div class="top-tools">
+      <div class="seg" id="seg">
+        <button data-company="all" aria-pressed="true">الشركتين</button>
+        <button data-company="Riferimento" aria-pressed="false">Riferimento</button>
+        <button data-company="GBS" aria-pressed="false">GBS</button>
+      </div>
+      <button class="icon-btn" id="refresh" data-act="refresh" aria-label="تحديث البيانات" title="تحديث البيانات">↻</button>
+    </div>
+  </div>
+</header>
+
+<main id="view"></main>
+
+<button class="fab" id="fab" data-act="newTx">+ تسجيل حركة</button>
+
+<nav class="tabs" aria-label="الأقسام">
+  <div class="tabs-in">
+    <button data-tab="home" class="on">الرئيسية</button>
+    <button data-tab="projects">المشاريع</button>
+    <button data-tab="txns">الحركات</button>
+    <button data-tab="reports">التقارير</button>
+  </div>
+</nav>
+
+<dialog id="sheet"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+/* =========================================================
+   الإعدادات: املا السطرين الأولانيين بس
+   ========================================================= */
+const CONFIG = {
+  API_URL: "https://script.google.com/macros/s/AKfycbyE0JFbbUOthlBNWQgjEgOZ_7dm1GG6Y_MpG4xH6plCkOmbPu0nhA7IRlksyfTfvs0s8A/exec",           // رابط الـ Web app من Apps Script (بينتهي بـ /exec)
+  GOOGLE_CLIENT_ID: "251398468688-61kpium1uvarn7io7jf96cuvsn478d0t.apps.googleusercontent.com",  // الـ Client ID من Google Cloud
+  SHEET_URL: "https://docs.google.com/spreadsheets/d/1yypC5fua6JmPj_Lw6koQtiBoCtWF2Nxb1yAjPsYMFlw/edit"
+};
+/* ========================================================= */
+
+(function(){
+"use strict";
+const COMPANIES=["Riferimento","GBS"];
+const CLS={Riferimento:"rif",GBS:"gbs"};
+const TYPES=["تحصيل","مواد","مقاول / عمالة","مصاريف مكتب","أخرى"];
+const IN="تحصيل",ACTIVE="جاري",DONE="منتهي";
+const SKEY="daftar-session";
+const S={company:"all",tab:"home",projectId:null,txFilter:"all",q:"",projects:[],txns:[],loaded:false,loading:false,loadErr:"",session:null,email:"",authMsg:"",authOk:false};
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{const n=parseFloat(String(v==null?"":v).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/٫/g,".").replace(/[,،\s]/g,""));return isFinite(n)?n:0};
+const raw=n=>Math.round(n||0).toLocaleString("en-US");
+const fmt=n=>`<bdi dir="ltr">${raw(n)}</bdi>`;
+const sg=(n,isIn)=>`<bdi dir="ltr">${isIn?"+":"−"}${raw(n)}</bdi>`;
+const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
+const fmtDate=d=>{if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return esc(d||"");const [y,m,dd]=d.split("-");return dd+"/"+m+"/"+y};
+const pct=(a,b)=>b>0?Math.max(0,Math.min(100,a/b*100)):0;
+const byDate=(a,b)=>(b.date||"").localeCompare(a.date||"")||String(b.id).localeCompare(String(a.id));
+const cls=c=>CLS[c]||"";
+
+let toastT;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600)}
+
+/* ---------- API ---------- */
+function loadSession(){try{const s=JSON.parse(localStorage.getItem(SKEY)||"null");if(s&&s.session){S.session=s.session;S.email=s.email||""}}catch(e){}}
+function saveSession(){try{localStorage.setItem(SKEY,JSON.stringify({session:S.session,email:S.email}))}catch(e){}}
+function endSession(msg){S.session=null;S.email="";S.loaded=false;S.projects=[];S.txns=[];try{localStorage.removeItem(SKEY)}catch(e){}S.authMsg=msg||"";S.authOk=false;closeSheet();render()}
+
+async function api(action,data){
+  let res;
+  try{res=await fetch(CONFIG.API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,session:S.session,data:data||{}})})}
+  catch(e){throw new Error("مفيش اتصال بالسيرفر. اتأكد من الإنترنت وجرّب تاني")}
+  let j;try{j=await res.json()}catch(e){throw new Error("رد غير متوقع من السيرفر. اتأكد من رابط Apps Script")}
+  if(!j.ok){
+    if(action!=="login"&&(j.error==="auth"||j.error==="forbidden"))endSession(j.message);
+    const er=new Error(j.message||"حصل خطأ، جرّب تاني");er.code=j.error;throw er;
+  }
+  return j.result;
+}
+
+async function load(quiet){
+  if(S.loading)return;S.loading=true;S.loadErr="";
+  const rb=$("#refresh");rb.setAttribute("aria-busy","true");
+  if(!quiet)render();
+  try{const r=await api("list");S.projects=r.projects||[];S.txns=r.txns||[];S.loaded=true}
+  catch(e){if(S.session)S.loadErr=e.message}
+  finally{S.loading=false;rb.removeAttribute("aria-busy");if(S.session)render()}
+}
+
+async function busy(btn,fn){
+  const old=btn?btn.textContent:"";if(btn){btn.disabled=true;btn.textContent="جاري الحفظ…"}
+  try{return await fn()}catch(e){toast(e.message);return null}
+  finally{if(btn&&btn.isConnected){btn.disabled=false;btn.textContent=old}}
+}
+function upsert(list,key,obj){const i=list.findIndex(x=>x[key]===obj[key]);if(i>=0)list[i]=obj;else list.push(obj)}
+
+/* ---------- Google login ---------- */
+function gateHtml(){
+  const missing=!CONFIG.API_URL||!CONFIG.GOOGLE_CLIENT_ID;
+  if(missing)return `<div class="gate"><h1>الموقع لسه محتاج إعداد</h1><p>افتح ملف <code>index.html</code> واملا <code>API_URL</code> و <code>GOOGLE_CLIENT_ID</code> في أول السكريبت، زي ما هو مكتوب في دليل الإعداد.</p></div>`;
+  return `<div class="gate"><h1>دفتر الحسابات</h1><p>سجّل الدخول بحساب Google المسموح له.</p><div id="gbtn"></div><div class="msg ${S.authOk?"ok":""}" id="authmsg">${esc(S.authMsg)}</div></div>`;
+}
+let gReady=false;
+function initGoogle(){
+  const el=$("#gbtn");if(!el)return;
+  if(!(window.google&&google.accounts&&google.accounts.id)){setTimeout(initGoogle,300);return}
+  if(!gReady){google.accounts.id.initialize({client_id:CONFIG.GOOGLE_CLIENT_ID,callback:onCredential,ux_mode:"popup",auto_select:false});gReady=true}
+  el.innerHTML="";
+  google.accounts.id.renderButton(el,{theme:"outline",size:"large",text:"signin_with",shape:"rectangular",locale:"ar",width:260});
+}
+async function onCredential(resp){
+  const m=$("#authmsg");if(m){m.className="msg ok";m.textContent="بيسجّل الدخول…"}
+  try{const r=await api("login",{credential:resp.credential});S.session=r.session;S.email=r.email;S.authMsg="";saveSession();load()}
+  catch(e){S.authMsg=e.message;S.authOk=false;render()}
+}
+
+/* ---------- Helpers ---------- */
+const inScope=x=>S.company==="all"||x.company===S.company;
+function totals(ts){let i=0,o=0;for(const t of ts){if(t.type===IN)i+=t.amount||0;else o+=t.amount||0}return{i,o,net:i-o}}
+function pstats(p){const ts=S.txns.filter(t=>t.project===p.code);const {i,o}=totals(ts);const c=p.contract||0;return{c,collected:i,spent:o,due:Math.max(0,c-i),profit:i-o,expected:c-o,ts}}
+const projName=code=>{if(!code)return"عام";const p=S.projects.find(x=>x.code===code);return p?p.name:code};
+function dim(c,s,base){return `<div class="dim" aria-hidden="true"><i class="c" style="width:${pct(c,base)}%"></i><i class="s" style="width:${pct(s,base)}%"></i></div>`}
+const loadingHtml=()=>S.loadErr?`<div class="errbox">${esc(S.loadErr)}<br><button class="ghost" data-act="refresh">جرّب تاني</button></div>`:'<p class="empty">بيحمّل البيانات من الشيت…</p>';
+
+function projCard(p){
+  const s=pstats(p);const base=Math.max(s.c,s.collected,s.spent);
+  return `<button class="proj" data-act="open" data-id="${esc(p.code)}">
+    <div class="proj-head"><span class="tag ${cls(p.company)}">${esc(p.company)}</span><b>${esc(p.name)}</b>${p.client?`<span class="muted">${esc(p.client)}</span>`:""}${p.status===DONE?'<span class="status">منتهي</span>':""}</div>
+    ${dim(s.collected,s.spent,base)}
+    <div class="proj-nums"><span>العقد<b>${fmt(s.c)}</b></span><span>اتحصّل<b class="in">${fmt(s.collected)}</b></span><span>اتصرف<b class="out">${fmt(s.spent)}</b></span><span>باقي على العميل<b>${fmt(s.due)}</b></span></div>
+  </button>`;
+}
+function txRow(t){
+  const isIn=t.type===IN;const sub=[projName(t.project)];if(S.company==="all")sub.push(t.company);
+  return `<li><button class="tx-row" data-act="tx" data-id="${esc(t.id)}">
+    <span class="tx-type ${isIn?"in":"out"}">${esc(t.type)}</span>
+    <span class="tx-main"><b>${esc(t.party||t.note||"بدون طرف")}</b><small>${esc(sub.join("، "))}</small></span>
+    <span class="tx-amt ${isIn?"in":"out"}">${sg(t.amount,isIn)}<small>${fmtDate(t.date)}</small></span>
+  </button></li>`;
+}
+
+/* ---------- Views ---------- */
+function viewHome(){
+  if(!S.loaded)return loadingHtml();
+  const ts=S.txns.filter(inScope);const projs=S.projects.filter(inScope);
+  if(!ts.length&&!projs.length)return `<section class="ledger"><p style="margin:0 0 4px;font-weight:600">الدفتر لسه فاضي</p><p class="empty" style="margin-bottom:14px">ابدأ بإضافة مشروع، وبعدين سجّل أول تحصيل أو مصروف عليه.</p><button class="primary" data-act="newProject">إضافة مشروع</button></section>`;
+  const {i,o,net}=totals(ts);const due=projs.reduce((s,p)=>s+pstats(p).due,0);
+  const active=projs.filter(p=>p.status!==DONE);
+  return `<section class="ledger" aria-label="موقف النقدية">
+    <div class="ledger-row"><span>دخل (تحصيلات)</span><b class="in">${fmt(i)}</b></div>
+    <div class="ledger-row"><span>خرج (مصروفات)</span><b class="out">${fmt(o)}</b></div>
+    ${dim(i,o,Math.max(i,o))}
+    <div class="ledger-net"><span>صافي النقدية</span><strong class="${net<0?"out":""}">${fmt(net)} <small>ج.م</small></strong></div>
+    <div class="ledger-due"><span>لسه مستحق على العملاء</span><b>${fmt(due)} ج.م</b></div>
+  </section>
+  <h2 class="sec">المشاريع الجارية <button class="link" data-act="tab" data-v="projects">كل المشاريع</button></h2>
+  ${active.map(projCard).join("")||'<p class="empty">مفيش مشاريع جارية.</p>'}
+  <h2 class="sec">آخر الحركات <button class="link" data-act="tab" data-v="txns">كل الحركات</button></h2>
+  ${ts.length?`<ul class="tx">${ts.slice().sort(byDate).slice(0,6).map(txRow).join("")}</ul>`:'<p class="empty">لسه مفيش حركات.</p>'}`;
+}
+function viewProjects(){
+  if(!S.loaded)return loadingHtml();
+  const projs=S.projects.filter(inScope).sort((a,b)=>(a.status===DONE)-(b.status===DONE)||String(b.code).localeCompare(String(a.code)));
+  return `<div class="toolbar"><h2 class="sec" style="margin:0;flex:1">المشاريع</h2><button class="primary" data-act="newProject">مشروع جديد</button></div>
+  ${projs.map(projCard).join("")||'<p class="empty">مفيش مشاريع لسه. أضف أول مشروع علشان تربط بيه التحصيلات والمصروفات.</p>'}`;
+}
+function viewProject(){
+  const p=S.projects.find(x=>x.code===S.projectId);
+  if(!p){S.tab="projects";return viewProjects()}
+  const s=pstats(p);
+  const cols=s.ts.filter(t=>t.type===IN).sort((a,b)=>-byDate(a,b));
+  let bal=s.c;
+  const stRows=cols.map(t=>{bal-=t.amount;return `<tr><td>${fmtDate(t.date)}</td><td>${esc(t.note||"دفعة")}${t.invoice?` <span class="muted">(${esc(t.invoice)})</span>`:""}</td><td class="n in">${fmt(t.amount)}</td><td class="n">${fmt(bal)}</td></tr>`}).join("");
+  const byType={};s.ts.filter(t=>t.type!==IN).forEach(t=>{byType[t.type]=(byType[t.type]||0)+t.amount});
+  const expRows=Object.keys(byType).map(k=>`<div class="bar"><div class="bar-top"><span>${esc(k)}</span><b class="out">${fmt(byType[k])}</b></div><div class="dim one" aria-hidden="true"><i class="s" style="width:${pct(byType[k],s.spent)}%"></i></div></div>`).join("");
+  const outs=s.ts.filter(t=>t.type!==IN).sort(byDate);
+  return `<button class="back" data-act="tab" data-v="projects">→ المشاريع</button>
+  <div class="ph"><span class="tag ${cls(p.company)}">${esc(p.company)}</span> <span class="status">${esc(p.status)}</span> <span class="muted" style="font-size:12px">${esc(p.code)}</span>
+    <h1>${esc(p.name)}</h1><p>${esc(p.client||"")}</p></div>
+  <div class="grid">
+    <div><span>قيمة العقد</span><b>${fmt(s.c)}</b></div>
+    <div><span>اتحصّل</span><b class="in">${fmt(s.collected)}</b></div>
+    <div><span>باقي على العميل</span><b>${fmt(s.due)}</b></div>
+    <div><span>اتصرف</span><b class="out">${fmt(s.spent)}</b></div>
+    <div><span>ربح النقدية الحالي</span><b class="${s.profit<0?"out":""}">${fmt(s.profit)}</b></div>
+    <div><span>الربح المتوقع (العقد − المصروف)</span><b class="${s.expected<0?"out":""}">${fmt(s.expected)}</b></div>
+  </div>
+  <div class="btnrow"><button class="primary" data-act="newTx" data-project="${esc(p.code)}">سجّل حركة على المشروع</button><button class="ghost" data-act="editProject" data-id="${esc(p.code)}">تعديل</button><button class="ghost" data-act="toggleDone" data-id="${esc(p.code)}">${p.status===DONE?"رجّعه جاري":"علّمه منتهي"}</button></div>
+  <h2 class="sec">كشف حساب العميل</h2>
+  <div class="tablewrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th class="n">الدفعة</th><th class="n">الباقي</th></tr></thead>
+  <tbody><tr><td>—</td><td>قيمة العقد</td><td class="n"></td><td class="n">${fmt(s.c)}</td></tr>${stRows||'<tr><td colspan="4" class="muted">لسه مفيش دفعات.</td></tr>'}</tbody>
+  <tfoot><tr><td></td><td>الإجمالي</td><td class="n in">${fmt(s.collected)}</td><td class="n">${fmt(s.c-s.collected)}</td></tr></tfoot></table></div>
+  <h2 class="sec">مصروفات المشروع حسب النوع</h2>
+  ${expRows?`<div class="bars">${expRows}</div>`:'<p class="empty">لسه مفيش مصروفات.</p>'}
+  ${outs.length?`<h2 class="sec">تفاصيل المصروفات</h2><ul class="tx">${outs.map(txRow).join("")}</ul>`:""}
+  <div class="btnrow" style="margin-top:28px"><button class="danger" data-act="delProject" data-id="${esc(p.code)}">حذف المشروع</button></div>`;
+}
+function filteredTxns(){
+  const q=S.q.trim().toLowerCase();
+  return S.txns.filter(inScope).filter(t=>S.txFilter==="all"||t.type===S.txFilter)
+    .filter(t=>!q||[t.party,t.note,t.invoice,t.project,projName(t.project)].join(" ").toLowerCase().includes(q)).sort(byDate);
+}
+function txListHtml(){
+  const ts=filteredTxns();const {i,o}=totals(ts);
+  return ts.length?`<p class="muted" style="font-size:13px;margin:0 0 8px">${ts.length} حركة: <span class="in">${sg(i,true)}</span> / <span class="out">${sg(o,false)}</span></p><ul class="tx">${ts.map(txRow).join("")}</ul>`:'<p class="empty">مفيش حركات مطابقة.</p>';
+}
+function viewTxns(){
+  if(!S.loaded)return loadingHtml();
+  const f=[["all","الكل"]].concat(TYPES.map(t=>[t,t]));
+  return `<h2 class="sec" style="margin-top:4px">الحركات</h2>
+  <div class="chipbar">${f.map(([k,l])=>`<button data-act="txFilter" data-v="${esc(k)}" aria-pressed="${S.txFilter===k}">${esc(l)}</button>`).join("")}</div>
+  <div class="toolbar"><input class="search" id="q" type="search" placeholder="ابحث بالطرف أو المشروع أو رقم الفاتورة" value="${esc(S.q)}" aria-label="بحث"></div>
+  <div id="txlist">${txListHtml()}</div>`;
+}
+function viewReports(){
+  if(!S.loaded)return loadingHtml();
+  const ts=S.txns.filter(inScope);const {o}=totals(ts);
+  const byType={};ts.filter(t=>t.type!==IN).forEach(t=>{byType[t.type]=(byType[t.type]||0)+t.amount});
+  const typeBars=Object.keys(byType).sort((a,b)=>byType[b]-byType[a]).map(k=>`<div class="bar"><div class="bar-top"><span>${esc(k)}</span><b class="out">${fmt(byType[k])}</b></div><div class="dim one" aria-hidden="true"><i class="s" style="width:${pct(byType[k],o)}%"></i></div></div>`).join("");
+  const months={};ts.forEach(t=>{const m=(t.date||"").slice(0,7);if(!m)return;months[m]=months[m]||{i:0,o:0};if(t.type===IN)months[m].i+=t.amount;else months[m].o+=t.amount});
+  const mRows=Object.keys(months).sort().reverse().slice(0,6).map(m=>`<tr><td>${m.slice(5)}/${m.slice(0,4)}</td><td class="n in">${fmt(months[m].i)}</td><td class="n out">${fmt(months[m].o)}</td><td class="n ${months[m].i-months[m].o<0?"out":""}">${fmt(months[m].i-months[m].o)}</td></tr>`).join("");
+  const parties={};ts.filter(t=>t.type!==IN&&t.party).forEach(t=>{parties[t.party]=(parties[t.party]||0)+t.amount});
+  const pRows=Object.keys(parties).sort((a,b)=>parties[b]-parties[a]).slice(0,8).map(k=>`<tr><td>${esc(k)}</td><td class="n out">${fmt(parties[k])}</td></tr>`).join("");
+  const compRows=S.company==="all"?COMPANIES.map(c=>{const t=totals(S.txns.filter(x=>x.company===c));return `<tr><td>${c}</td><td class="n in">${fmt(t.i)}</td><td class="n out">${fmt(t.o)}</td><td class="n ${t.net<0?"out":""}">${fmt(t.net)}</td></tr>`}).join(""):"";
+  return `${compRows?`<h2 class="sec" style="margin-top:4px">مقارنة الشركتين</h2><div class="tablewrap"><table><thead><tr><th>الشركة</th><th class="n">دخل</th><th class="n">خرج</th><th class="n">صافي</th></tr></thead><tbody>${compRows}</tbody></table></div>`:""}
+  <h2 class="sec">المصروفات حسب النوع</h2>${typeBars?`<div class="bars">${typeBars}</div>`:'<p class="empty">لسه مفيش مصروفات.</p>'}
+  <h2 class="sec">آخر 6 شهور</h2>${mRows?`<div class="tablewrap"><table><thead><tr><th>الشهر</th><th class="n">دخل</th><th class="n">خرج</th><th class="n">صافي</th></tr></thead><tbody>${mRows}</tbody></table></div>`:'<p class="empty">لسه مفيش حركات.</p>'}
+  <h2 class="sec">أكبر الموردين والمقاولين</h2>${pRows?`<div class="tablewrap"><table><thead><tr><th>الطرف</th><th class="n">إجمالي المدفوع</th></tr></thead><tbody>${pRows}</tbody></table></div>`:'<p class="empty">سجّل اسم الطرف مع كل مصروف علشان يظهر هنا.</p>'}
+  <div class="btnrow" style="margin-top:22px">${CONFIG.SHEET_URL?`<a class="ghost" href="${esc(CONFIG.SHEET_URL)}" target="_blank" rel="noopener">افتح الشيت</a>`:""}<button class="ghost" data-act="logout">تسجيل الخروج</button></div>
+  <p class="note">داخل بـ <bdi>${esc(S.email)}</bdi>. البيانات محفوظة في Google Sheet في الـ Drive بتاعك، وأي تعديل هنا بيتسجل هناك على طول.</p>`;
+}
+
+function render(){
+  const locked=!S.session;
+  document.body.classList.toggle("locked",locked);
+  if(locked){$("#view").innerHTML=gateHtml();initGoogle();return}
+  document.querySelectorAll("[data-company]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.company===S.company)));
+  const navTab=S.tab==="project"?"projects":S.tab;
+  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===navTab));
+  const views={home:viewHome,projects:viewProjects,project:viewProject,txns:viewTxns,reports:viewReports};
+  $("#view").innerHTML=(views[S.tab]||viewHome)();
+}
+
+/* ---------- Sheets / forms ---------- */
+const sheet=$("#sheet");
+function openSheet(html){sheet.innerHTML=html;if(!sheet.open){try{sheet.showModal()}catch(e){sheet.setAttribute("open","")}}const f=sheet.querySelector("[autofocus]");if(f)f.focus()}
+function closeSheet(){if(sheet.open)sheet.close();sheet.innerHTML=""}
+sheet.addEventListener("click",e=>{if(e.target===sheet)closeSheet()});
+
+function projOptions(company,sel){
+  const ps=S.projects.filter(p=>p.company===company&&(p.status!==DONE||p.code===sel));
+  return `<option value="">عام (بدون مشروع)</option>`+ps.map(p=>`<option value="${esc(p.code)}" ${p.code===sel?"selected":""}>${esc(p.name)}</option>`).join("");
+}
+const compOptions=sel=>COMPANIES.map(c=>`<option value="${c}" ${c===sel?"selected":""}>${c}</option>`).join("");
+function txForm(t){
+  t=t||{};const company=t.company||(S.company!=="all"?S.company:COMPANIES[0]);const type=t.type||IN;
+  const parties=[...new Set(S.txns.map(x=>x.party).filter(Boolean))].slice(0,300);
+  return `<div class="form" id="txf" data-id="${esc(t.id||"")}">
+    <h3>${t.id?"تعديل حركة":"تسجيل حركة"}</h3>
+    <fieldset class="typechips"><legend class="muted" style="font-size:12px;margin-bottom:6px">نوع الحركة</legend>${TYPES.map(k=>`<label><input type="radio" name="type" value="${esc(k)}" ${type===k?"checked":""}><span>${esc(k)}</span></label>`).join("")}</fieldset>
+    <label class="f"><span>المبلغ (ج.م)</span><input class="big" name="amount" inputmode="decimal" autocomplete="off" value="${t.amount?esc(t.amount):""}" autofocus></label>
+    <div class="row2">
+      <label class="f"><span>الشركة</span><select name="company">${compOptions(company)}</select></label>
+      <label class="f"><span>المشروع</span><select name="project">${projOptions(company,t.project)}</select></label>
+    </div>
+    <label class="f"><span>الطرف (عميل، مورد، مقاول)</span><input name="party" list="partylist" value="${esc(t.party||"")}" autocomplete="off"></label>
+    <datalist id="partylist">${parties.map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
+    <div class="row2">
+      <label class="f"><span>التاريخ</span><input type="date" name="date" value="${esc(t.date||today())}"></label>
+      <label class="f"><span>رقم الفاتورة / الإيصال</span><input name="invoice" value="${esc(t.invoice||"")}"></label>
+    </div>
+    <label class="f"><span>ملاحظات</span><textarea name="note" rows="2">${esc(t.note||"")}</textarea></label>
+    <div class="actions"><button type="button" class="primary" data-act="saveTx">حفظ الحركة</button><button type="button" class="ghost" data-act="close">إلغاء</button></div>
+  </div>`;
+}
+function projForm(p){
+  p=p||{};const company=p.company||(S.company!=="all"?S.company:COMPANIES[0]);
+  return `<div class="form" id="pf" data-code="${esc(p.code||"")}" data-status="${esc(p.status||ACTIVE)}">
+    <h3>${p.code?"تعديل المشروع":"مشروع جديد"}</h3>
+    <label class="f"><span>اسم المشروع</span><input name="name" value="${esc(p.name||"")}" autofocus autocomplete="off"></label>
+    <label class="f"><span>العميل</span><input name="client" value="${esc(p.client||"")}" autocomplete="off"></label>
+    <div class="row2">
+      <label class="f"><span>الشركة</span><select name="company" ${p.code?"disabled":""}>${compOptions(company)}</select></label>
+      <label class="f"><span>قيمة العقد (ج.م)</span><input name="contract" inputmode="decimal" value="${p.contract?esc(p.contract):""}" autocomplete="off"></label>
+    </div>
+    <div class="actions"><button type="button" class="primary" data-act="saveProject">حفظ المشروع</button><button type="button" class="ghost" data-act="close">إلغاء</button></div>
+  </div>`;
+}
+function txDetail(t){
+  const isIn=t.type===IN;
+  return `<div class="form detail"><h3 class="${isIn?"in":"out"}">${sg(t.amount,isIn)} ج.م</h3>
+  <dl><dt>النوع</dt><dd>${esc(t.type)}</dd><dt>الشركة</dt><dd>${esc(t.company)}</dd><dt>المشروع</dt><dd>${esc(projName(t.project))}</dd><dt>الطرف</dt><dd>${esc(t.party||"—")}</dd><dt>التاريخ</dt><dd>${fmtDate(t.date)}</dd><dt>رقم الفاتورة</dt><dd>${esc(t.invoice||"—")}</dd><dt>ملاحظات</dt><dd>${esc(t.note||"—")}</dd></dl>
+  <div class="actions"><button type="button" class="primary" data-act="editTx" data-id="${esc(t.id)}">تعديل</button><button type="button" class="danger" data-act="delTx" data-id="${esc(t.id)}">حذف</button><button type="button" class="ghost" data-act="close">قفل</button></div></div>`;
+}
+const val=(root,n)=>{const el=root.querySelector(`[name="${n}"]`);return el?el.value.trim():""};
+
+async function saveTx(btn){
+  const f=$("#txf");const amount=num(val(f,"amount"));
+  if(amount<=0){toast("اكتب المبلغ");f.querySelector('[name="amount"]').focus();return}
+  const typeEl=f.querySelector('[name="type"]:checked');
+  const obj={id:f.dataset.id||"",type:typeEl?typeEl.value:IN,amount,company:val(f,"company"),project:val(f,"project"),party:val(f,"party"),date:val(f,"date")||today(),invoice:val(f,"invoice"),note:val(f,"note")};
+  const saved=await busy(btn,()=>api("saveTxn",obj));
+  if(saved){upsert(S.txns,"id",saved);closeSheet();render();toast(obj.id?"اتعدّلت الحركة":"اتسجلت الحركة")}
+}
+async function saveProject(btn){
+  const f=$("#pf");const name=val(f,"name");
+  if(!name){toast("اكتب اسم المشروع");f.querySelector('[name="name"]').focus();return}
+  const code=f.dataset.code;const old=S.projects.find(x=>x.code===code);
+  const obj={code,name,client:val(f,"client"),company:old?old.company:val(f,"company"),contract:num(val(f,"contract")),status:f.dataset.status||ACTIVE};
+  const saved=await busy(btn,()=>api("saveProject",obj));
+  if(saved){upsert(S.projects,"code",saved);closeSheet();if(!code){S.tab="project";S.projectId=saved.code}render();toast(code?"اتعدّل المشروع":"اتضاف المشروع")}
+}
+
+/* ---------- Events ---------- */
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-company],[data-tab],[data-act]");if(!b||b.disabled)return;
+  if(b.dataset.company){S.company=b.dataset.company;if(S.tab==="project")S.tab="projects";render();return}
+  if(b.dataset.tab){S.tab=b.dataset.tab;render();window.scrollTo(0,0);return}
+  const a=b.dataset.act,id=b.dataset.id;
+  switch(a){
+    case "refresh":load();break;
+    case "tab":S.tab=b.dataset.v;render();window.scrollTo(0,0);break;
+    case "open":S.tab="project";S.projectId=id;render();window.scrollTo(0,0);break;
+    case "newTx":{
+      if(!S.loaded){toast("استنى البيانات تحمّل");break}
+      const pc=b.dataset.project||(S.tab==="project"?S.projectId:"");const p=S.projects.find(x=>x.code===pc);
+      openSheet(txForm(p?{company:p.company,project:p.code,type:IN}:null));break}
+    case "newProject":openSheet(projForm());break;
+    case "editProject":openSheet(projForm(S.projects.find(x=>x.code===id)));break;
+    case "toggleDone":{
+      const p=S.projects.find(x=>x.code===id);if(!p)break;
+      const saved=await busy(b,()=>api("saveProject",Object.assign({},p,{status:p.status===DONE?ACTIVE:DONE})));
+      if(saved){upsert(S.projects,"code",saved);render();toast(saved.status===DONE?"المشروع اتعلّم منتهي":"المشروع رجع جاري")}break}
+    case "delProject":{
+      if(S.txns.some(t=>t.project===id)){toast("احذف حركات المشروع الأول");break}
+      if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="اضغط تاني لتأكيد الحذف";break}
+      const ok=await busy(b,()=>api("deleteProject",{code:id}));
+      if(ok){S.projects=S.projects.filter(x=>x.code!==id);S.tab="projects";render();toast("اتحذف المشروع")}break}
+    case "tx":{const t=S.txns.find(x=>x.id===id);if(t)openSheet(txDetail(t));break}
+    case "editTx":openSheet(txForm(S.txns.find(x=>x.id===id)));break;
+    case "delTx":{
+      if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="اضغط تاني للتأكيد";break}
+      const ok=await busy(b,()=>api("deleteTxn",{id}));
+      if(ok){S.txns=S.txns.filter(x=>x.id!==id);closeSheet();render();toast("اتحذفت الحركة")}break}
+    case "saveTx":saveTx(b);break;
+    case "saveProject":saveProject(b);break;
+    case "close":closeSheet();break;
+    case "txFilter":S.txFilter=b.dataset.v;render();break;
+    case "logout":{try{await api("logout")}catch(e){}if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect();endSession("");break}
+  }
+});
+document.addEventListener("change",e=>{
+  if(e.target.matches('#txf [name="company"]'))$('#txf [name="project"]').innerHTML=projOptions(e.target.value,"");
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="q"){S.q=e.target.value;const l=$("#txlist");if(l)l.innerHTML=txListHtml()}
+});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.session&&S.loaded&&!sheet.open)load(true)});
+
+/* ---------- Start ---------- */
+loadSession();render();if(S.session)load();
+})();
+</script>
+</body>
+</html>
