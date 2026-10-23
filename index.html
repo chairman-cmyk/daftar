@@ -231,7 +231,10 @@ const CLS={Riferimento:"rif",GBS:"gbs"};
 const TYPES=["تحصيل","مواد","مقاول / عمالة","مصاريف مكتب","أخرى"];
 const IN="تحصيل",ACTIVE="جاري",DONE="منتهي";
 const SKEY="daftar-session";
-const S={company:"all",tab:"home",projectId:null,txFilter:"all",q:"",projects:[],txns:[],loaded:false,loading:false,loadErr:"",session:null,email:"",authMsg:"",authOk:false};
+const S={company:"all",tab:"home",projectId:null,txFilter:"all",q:"",projects:[],txns:[],users:[],me:null,loaded:false,loading:false,loadErr:"",session:null,email:"",authMsg:"",authOk:false};
+const ENG="مهندس";
+const isEng=()=>!!(S.me&&S.me.role===ENG);
+const userName=e=>{const u=S.users.find(x=>x.email===e);return u&&u.name?u.name:(e||"")};
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -251,7 +254,7 @@ function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show"
 /* ---------- API ---------- */
 function loadSession(){try{const s=JSON.parse(localStorage.getItem(SKEY)||"null");if(s&&s.session){S.session=s.session;S.email=s.email||""}}catch(e){}}
 function saveSession(){try{localStorage.setItem(SKEY,JSON.stringify({session:S.session,email:S.email}))}catch(e){}}
-function endSession(msg){S.session=null;S.email="";S.loaded=false;S.projects=[];S.txns=[];try{localStorage.removeItem(SKEY)}catch(e){}S.authMsg=msg||"";S.authOk=false;closeSheet();render()}
+function endSession(msg){S.session=null;S.email="";S.loaded=false;S.projects=[];S.txns=[];S.users=[];S.me=null;try{localStorage.removeItem(SKEY)}catch(e){}S.authMsg=msg||"";S.authOk=false;closeSheet();render()}
 
 async function api(action,data){
   let res;
@@ -269,7 +272,7 @@ async function load(quiet){
   if(S.loading)return;S.loading=true;S.loadErr="";
   const rb=$("#refresh");rb.setAttribute("aria-busy","true");
   if(!quiet)render();
-  try{const r=await api("list");S.projects=r.projects||[];S.txns=r.txns||[];S.loaded=true}
+  try{const r=await api("list");S.projects=r.projects||[];S.txns=r.txns||[];S.users=r.users||[];S.me=r.me||null;S.loaded=true;$("#fab").textContent=isEng()?"+ تسجيل مصروف":"+ تسجيل حركة";if(isEng()&&S.txFilter===IN)S.txFilter="all"}
   catch(e){if(S.session)S.loadErr=e.message}
   finally{S.loading=false;rb.removeAttribute("aria-busy");if(S.session)render()}
 }
@@ -317,6 +320,32 @@ function projCard(p){
     <div class="proj-nums"><span>العقد<b>${fmt(s.c)}</b></span><span>اتحصّل<b class="in">${fmt(s.collected)}</b></span><span>اتصرف<b class="out">${fmt(s.spent)}</b></span><span>باقي على العميل<b>${fmt(s.due)}</b></span></div>
   </button>`;
 }
+function engCard(p){
+  const s=pstats(p);
+  return `<button class="proj" data-act="open" data-id="${esc(p.code)}">
+    <div class="proj-head"><span class="tag ${cls(p.company)}">${esc(p.company)}</span><b>${esc(p.name)}</b>${p.client?`<span class="muted">${esc(p.client)}</span>`:""}${p.status===DONE?'<span class="status">منتهي</span>':""}</div>
+    <div class="proj-nums" style="margin-top:10px"><span>المصروفات<b class="out">${fmt(s.spent)}</b></span><span>عدد الحركات<b>${s.ts.length}</b></span></div>
+  </button>`;
+}
+function viewHomeEng(){
+  const projs=S.projects.filter(inScope);const ts=S.txns.filter(inScope);
+  if(!S.projects.length)return `<section class="ledger"><p style="margin:0 0 4px;font-weight:600">مفيش مشاريع مسندة ليك لسه</p><p class="empty">أول ما المدير يسند لك مشروع هيظهر هنا، وتقدر تسجل مصروفاته.</p></section>`;
+  return `<h2 class="sec" style="margin-top:4px">مشاريعي</h2>${projs.map(engCard).join("")||'<p class="empty">مفيش مشاريع للشركة دي.</p>'}
+  <h2 class="sec">آخر المصروفات <button class="link" data-act="tab" data-v="txns">كل المصروفات</button></h2>
+  ${ts.length?`<ul class="tx">${ts.slice().sort(byDate).slice(0,8).map(txRow).join("")}</ul>`:'<p class="empty">لسه مفيش مصروفات.</p>'}`;
+}
+function viewProjectEng(p){
+  const s=pstats(p);
+  const byType={};s.ts.forEach(t=>{byType[t.type]=(byType[t.type]||0)+t.amount});
+  const expRows=Object.keys(byType).map(k=>`<div class="bar"><div class="bar-top"><span>${esc(k)}</span><b class="out">${fmt(byType[k])}</b></div><div class="dim one" aria-hidden="true"><i class="s" style="width:${pct(byType[k],s.spent)}%"></i></div></div>`).join("");
+  return `<button class="back" data-act="tab" data-v="projects">→ المشاريع</button>
+  <div class="ph"><span class="tag ${cls(p.company)}">${esc(p.company)}</span> <span class="status">${esc(p.status)}</span>
+    <h1>${esc(p.name)}</h1><p>${esc(p.client||"")}</p></div>
+  <div class="grid"><div><span>إجمالي المصروفات</span><b class="out">${fmt(s.spent)}</b></div><div><span>عدد الحركات</span><b>${s.ts.length}</b></div></div>
+  ${p.status!==DONE?`<div class="btnrow"><button class="primary" data-act="newTx" data-project="${esc(p.code)}">سجّل مصروف على المشروع</button></div>`:""}
+  <h2 class="sec">المصروفات حسب النوع</h2>${expRows?`<div class="bars">${expRows}</div>`:'<p class="empty">لسه مفيش مصروفات.</p>'}
+  ${s.ts.length?`<h2 class="sec">كل المصروفات</h2><ul class="tx">${s.ts.slice().sort(byDate).map(txRow).join("")}</ul>`:""}`;
+}
 function txRow(t){
   const isIn=t.type===IN;const sub=[projName(t.project)];if(S.company==="all")sub.push(t.company);
   return `<li><button class="tx-row" data-act="tx" data-id="${esc(t.id)}">
@@ -329,6 +358,7 @@ function txRow(t){
 /* ---------- Views ---------- */
 function viewHome(){
   if(!S.loaded)return loadingHtml();
+  if(isEng())return viewHomeEng();
   const ts=S.txns.filter(inScope);const projs=S.projects.filter(inScope);
   if(!ts.length&&!projs.length)return `<section class="ledger"><p style="margin:0 0 4px;font-weight:600">الدفتر لسه فاضي</p><p class="empty" style="margin-bottom:14px">ابدأ بإضافة مشروع، وبعدين سجّل أول تحصيل أو مصروف عليه.</p><button class="primary" data-act="newProject">إضافة مشروع</button></section>`;
   const {i,o,net}=totals(ts);const due=projs.reduce((s,p)=>s+pstats(p).due,0);
@@ -348,12 +378,14 @@ function viewHome(){
 function viewProjects(){
   if(!S.loaded)return loadingHtml();
   const projs=S.projects.filter(inScope).sort((a,b)=>(a.status===DONE)-(b.status===DONE)||String(b.code).localeCompare(String(a.code)));
+  if(isEng())return `<h2 class="sec" style="margin-top:4px">مشاريعي</h2>${projs.map(engCard).join("")||'<p class="empty">مفيش مشاريع مسندة ليك.</p>'}`;
   return `<div class="toolbar"><h2 class="sec" style="margin:0;flex:1">المشاريع</h2><button class="primary" data-act="newProject">مشروع جديد</button></div>
   ${projs.map(projCard).join("")||'<p class="empty">مفيش مشاريع لسه. أضف أول مشروع علشان تربط بيه التحصيلات والمصروفات.</p>'}`;
 }
 function viewProject(){
   const p=S.projects.find(x=>x.code===S.projectId);
   if(!p){S.tab="projects";return viewProjects()}
+  if(isEng())return viewProjectEng(p);
   const s=pstats(p);
   const cols=s.ts.filter(t=>t.type===IN).sort((a,b)=>-byDate(a,b));
   let bal=s.c;
@@ -363,7 +395,7 @@ function viewProject(){
   const outs=s.ts.filter(t=>t.type!==IN).sort(byDate);
   return `<button class="back" data-act="tab" data-v="projects">→ المشاريع</button>
   <div class="ph"><span class="tag ${cls(p.company)}">${esc(p.company)}</span> <span class="status">${esc(p.status)}</span> <span class="muted" style="font-size:12px">${esc(p.code)}</span>
-    <h1>${esc(p.name)}</h1><p>${esc(p.client||"")}</p></div>
+    <h1>${esc(p.name)}</h1><p>${esc(p.client||"")}</p>${(p.engineers||[]).length?`<p style="margin-top:4px">المهندسين: ${esc(p.engineers.map(userName).join("، "))}</p>`:""}</div>
   <div class="grid">
     <div><span>قيمة العقد</span><b>${fmt(s.c)}</b></div>
     <div><span>اتحصّل</span><b class="in">${fmt(s.collected)}</b></div>
@@ -393,7 +425,7 @@ function txListHtml(){
 }
 function viewTxns(){
   if(!S.loaded)return loadingHtml();
-  const f=[["all","الكل"]].concat(TYPES.map(t=>[t,t]));
+  const f=[["all","الكل"]].concat(TYPES.filter(t=>!isEng()||t!==IN).map(t=>[t,t]));
   return `<h2 class="sec" style="margin-top:4px">الحركات</h2>
   <div class="chipbar">${f.map(([k,l])=>`<button data-act="txFilter" data-v="${esc(k)}" aria-pressed="${S.txFilter===k}">${esc(l)}</button>`).join("")}</div>
   <div class="toolbar"><input class="search" id="q" type="search" placeholder="ابحث بالطرف أو المشروع أو رقم الفاتورة" value="${esc(S.q)}" aria-label="بحث"></div>
@@ -401,6 +433,7 @@ function viewTxns(){
 }
 function viewReports(){
   if(!S.loaded)return loadingHtml();
+  if(isEng())return viewReportsEng();
   const ts=S.txns.filter(inScope);const {o}=totals(ts);
   const byType={};ts.filter(t=>t.type!==IN).forEach(t=>{byType[t.type]=(byType[t.type]||0)+t.amount});
   const typeBars=Object.keys(byType).sort((a,b)=>byType[b]-byType[a]).map(k=>`<div class="bar"><div class="bar-top"><span>${esc(k)}</span><b class="out">${fmt(byType[k])}</b></div><div class="dim one" aria-hidden="true"><i class="s" style="width:${pct(byType[k],o)}%"></i></div></div>`).join("");
@@ -415,6 +448,18 @@ function viewReports(){
   <h2 class="sec">أكبر الموردين والمقاولين</h2>${pRows?`<div class="tablewrap"><table><thead><tr><th>الطرف</th><th class="n">إجمالي المدفوع</th></tr></thead><tbody>${pRows}</tbody></table></div>`:'<p class="empty">سجّل اسم الطرف مع كل مصروف علشان يظهر هنا.</p>'}
   <div class="btnrow" style="margin-top:22px">${CONFIG.SHEET_URL?`<a class="ghost" href="${esc(CONFIG.SHEET_URL)}" target="_blank" rel="noopener">افتح الشيت</a>`:""}<button class="ghost" data-act="logout">تسجيل الخروج</button></div>
   <p class="note">داخل بـ <bdi>${esc(S.email)}</bdi>. البيانات محفوظة في Google Sheet في الـ Drive بتاعك، وأي تعديل هنا بيتسجل هناك على طول.</p>`;
+}
+
+function viewReportsEng(){
+  const ts=S.txns.filter(inScope);const {o}=totals(ts);
+  const byType={};ts.forEach(t=>{byType[t.type]=(byType[t.type]||0)+t.amount});
+  const typeBars=Object.keys(byType).sort((a,b)=>byType[b]-byType[a]).map(k=>`<div class="bar"><div class="bar-top"><span>${esc(k)}</span><b class="out">${fmt(byType[k])}</b></div><div class="dim one" aria-hidden="true"><i class="s" style="width:${pct(byType[k],o)}%"></i></div></div>`).join("");
+  const parties={};ts.filter(t=>t.party).forEach(t=>{parties[t.party]=(parties[t.party]||0)+t.amount});
+  const pRows=Object.keys(parties).sort((a,b)=>parties[b]-parties[a]).slice(0,8).map(k=>`<tr><td>${esc(k)}</td><td class="n out">${fmt(parties[k])}</td></tr>`).join("");
+  return `<h2 class="sec" style="margin-top:4px">مصروفات مشاريعي حسب النوع</h2>${typeBars?`<div class="bars">${typeBars}</div>`:'<p class="empty">لسه مفيش مصروفات.</p>'}
+  <h2 class="sec">أكبر الموردين والمقاولين</h2>${pRows?`<div class="tablewrap"><table><thead><tr><th>الطرف</th><th class="n">إجمالي المدفوع</th></tr></thead><tbody>${pRows}</tbody></table></div>`:'<p class="empty">لسه مفيش بيانات.</p>'}
+  <div class="btnrow" style="margin-top:22px"><button class="ghost" data-act="logout">تسجيل الخروج</button></div>
+  <p class="note">داخل بـ <bdi>${esc(S.email)}</bdi> كمهندس موقع.</p>`;
 }
 
 function render(){
@@ -438,18 +483,20 @@ function projOptions(company,sel){
   const ps=S.projects.filter(p=>p.company===company&&(p.status!==DONE||p.code===sel));
   return `<option value="">عام (بدون مشروع)</option>`+ps.map(p=>`<option value="${esc(p.code)}" ${p.code===sel?"selected":""}>${esc(p.name)}</option>`).join("");
 }
+const engProjOptions=sel=>{const ps=S.projects.filter(p=>p.status!==DONE||p.code===sel);return (ps.length>1&&!sel?'<option value="">اختار المشروع</option>':"")+ps.map(p=>`<option value="${esc(p.code)}" ${p.code===sel?"selected":""}>${esc(p.name)}</option>`).join("")};
 const compOptions=sel=>COMPANIES.map(c=>`<option value="${c}" ${c===sel?"selected":""}>${c}</option>`).join("");
 function txForm(t){
-  t=t||{};const company=t.company||(S.company!=="all"?S.company:COMPANIES[0]);const type=t.type||IN;
+  t=t||{};const eng=isEng();const company=t.company||(S.company!=="all"?S.company:COMPANIES[0]);const type=t.type||(eng?"مواد":IN);
+  const types=eng?TYPES.filter(x=>x!==IN):TYPES;
   const parties=[...new Set(S.txns.map(x=>x.party).filter(Boolean))].slice(0,300);
   return `<div class="form" id="txf" data-id="${esc(t.id||"")}">
-    <h3>${t.id?"تعديل حركة":"تسجيل حركة"}</h3>
-    <fieldset class="typechips"><legend class="muted" style="font-size:12px;margin-bottom:6px">نوع الحركة</legend>${TYPES.map(k=>`<label><input type="radio" name="type" value="${esc(k)}" ${type===k?"checked":""}><span>${esc(k)}</span></label>`).join("")}</fieldset>
+    <h3>${t.id?"تعديل حركة":(eng?"تسجيل مصروف":"تسجيل حركة")}</h3>
+    <fieldset class="typechips"><legend class="muted" style="font-size:12px;margin-bottom:6px">نوع الحركة</legend>${types.map(k=>`<label><input type="radio" name="type" value="${esc(k)}" ${type===k?"checked":""}><span>${esc(k)}</span></label>`).join("")}</fieldset>
     <label class="f"><span>المبلغ (ج.م)</span><input class="big" name="amount" inputmode="decimal" autocomplete="off" value="${t.amount?esc(t.amount):""}" autofocus></label>
-    <div class="row2">
+    ${eng?`<label class="f"><span>المشروع</span><select name="project">${engProjOptions(t.project)}</select></label>`:`<div class="row2">
       <label class="f"><span>الشركة</span><select name="company">${compOptions(company)}</select></label>
       <label class="f"><span>المشروع</span><select name="project">${projOptions(company,t.project)}</select></label>
-    </div>
+    </div>`}
     <label class="f"><span>الطرف (عميل، مورد، مقاول)</span><input name="party" list="partylist" value="${esc(t.party||"")}" autocomplete="off"></label>
     <datalist id="partylist">${parties.map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
     <div class="row2">
@@ -470,14 +517,20 @@ function projForm(p){
       <label class="f"><span>الشركة</span><select name="company" ${p.code?"disabled":""}>${compOptions(company)}</select></label>
       <label class="f"><span>قيمة العقد (ج.م)</span><input name="contract" inputmode="decimal" value="${p.contract?esc(p.contract):""}" autocomplete="off"></label>
     </div>
+    <fieldset class="f engs" style="border:0;padding:0;margin:0 0 12px"><legend class="muted" style="font-size:12px;margin-bottom:6px">مهندسين الموقع المسؤولين</legend>${engChecks(p.engineers||[])}</fieldset>
     <div class="actions"><button type="button" class="primary" data-act="saveProject">حفظ المشروع</button><button type="button" class="ghost" data-act="close">إلغاء</button></div>
   </div>`;
+}
+function engChecks(sel){
+  const engs=S.users.filter(u=>u.role===ENG);
+  if(!engs.length)return '<p class="empty" style="margin:0">ضيف المهندسين الأول في تاب "المستخدمين" في الشيت، ودورهم "مهندس".</p>';
+  return engs.map(u=>`<label style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="checkbox" name="eng" value="${esc(u.email)}" ${sel.indexOf(u.email)>=0?"checked":""}><span>${esc(u.name||u.email)} <small class="muted"><bdi>${esc(u.email)}</bdi></small></span></label>`).join("");
 }
 function txDetail(t){
   const isIn=t.type===IN;
   return `<div class="form detail"><h3 class="${isIn?"in":"out"}">${sg(t.amount,isIn)} ج.م</h3>
-  <dl><dt>النوع</dt><dd>${esc(t.type)}</dd><dt>الشركة</dt><dd>${esc(t.company)}</dd><dt>المشروع</dt><dd>${esc(projName(t.project))}</dd><dt>الطرف</dt><dd>${esc(t.party||"—")}</dd><dt>التاريخ</dt><dd>${fmtDate(t.date)}</dd><dt>رقم الفاتورة</dt><dd>${esc(t.invoice||"—")}</dd><dt>ملاحظات</dt><dd>${esc(t.note||"—")}</dd></dl>
-  <div class="actions"><button type="button" class="primary" data-act="editTx" data-id="${esc(t.id)}">تعديل</button><button type="button" class="danger" data-act="delTx" data-id="${esc(t.id)}">حذف</button><button type="button" class="ghost" data-act="close">قفل</button></div></div>`;
+  <dl><dt>النوع</dt><dd>${esc(t.type)}</dd><dt>الشركة</dt><dd>${esc(t.company)}</dd><dt>المشروع</dt><dd>${esc(projName(t.project))}</dd><dt>الطرف</dt><dd>${esc(t.party||"—")}</dd><dt>التاريخ</dt><dd>${fmtDate(t.date)}</dd><dt>رقم الفاتورة</dt><dd>${esc(t.invoice||"—")}</dd><dt>ملاحظات</dt><dd>${esc(t.note||"—")}</dd>${t.by?`<dt>سجّلها</dt><dd>${esc(isEng()?t.by:userName(t.by))}</dd>`:""}</dl>
+  <div class="actions">${isEng()?"":`<button type="button" class="primary" data-act="editTx" data-id="${esc(t.id)}">تعديل</button><button type="button" class="danger" data-act="delTx" data-id="${esc(t.id)}">حذف</button>`}<button type="button" class="ghost" data-act="close">قفل</button></div></div>`;
 }
 const val=(root,n)=>{const el=root.querySelector(`[name="${n}"]`);return el?el.value.trim():""};
 
@@ -485,7 +538,8 @@ async function saveTx(btn){
   const f=$("#txf");const amount=num(val(f,"amount"));
   if(amount<=0){toast("اكتب المبلغ");f.querySelector('[name="amount"]').focus();return}
   const typeEl=f.querySelector('[name="type"]:checked');
-  const obj={id:f.dataset.id||"",type:typeEl?typeEl.value:IN,amount,company:val(f,"company"),project:val(f,"project"),party:val(f,"party"),date:val(f,"date")||today(),invoice:val(f,"invoice"),note:val(f,"note")};
+  if(isEng()&&!val(f,"project")){toast("اختار المشروع");return}
+  const obj={id:f.dataset.id||"",type:typeEl?typeEl.value:IN,amount,company:val(f,"company")||((S.projects.find(p=>p.code===val(f,"project"))||{}).company||""),project:val(f,"project"),party:val(f,"party"),date:val(f,"date")||today(),invoice:val(f,"invoice"),note:val(f,"note")};
   const saved=await busy(btn,()=>api("saveTxn",obj));
   if(saved){upsert(S.txns,"id",saved);closeSheet();render();toast(obj.id?"اتعدّلت الحركة":"اتسجلت الحركة")}
 }
@@ -493,7 +547,8 @@ async function saveProject(btn){
   const f=$("#pf");const name=val(f,"name");
   if(!name){toast("اكتب اسم المشروع");f.querySelector('[name="name"]').focus();return}
   const code=f.dataset.code;const old=S.projects.find(x=>x.code===code);
-  const obj={code,name,client:val(f,"client"),company:old?old.company:val(f,"company"),contract:num(val(f,"contract")),status:f.dataset.status||ACTIVE};
+  const engineers=[...f.querySelectorAll('[name="eng"]:checked')].map(x=>x.value);
+  const obj={code,name,client:val(f,"client"),company:old?old.company:val(f,"company"),contract:num(val(f,"contract")),status:f.dataset.status||ACTIVE,engineers};
   const saved=await busy(btn,()=>api("saveProject",obj));
   if(saved){upsert(S.projects,"code",saved);closeSheet();if(!code){S.tab="project";S.projectId=saved.code}render();toast(code?"اتعدّل المشروع":"اتضاف المشروع")}
 }
@@ -511,8 +566,8 @@ document.addEventListener("click",async e=>{
     case "newTx":{
       if(!S.loaded){toast("استنى البيانات تحمّل");break}
       const pc=b.dataset.project||(S.tab==="project"?S.projectId:"");const p=S.projects.find(x=>x.code===pc);
-      openSheet(txForm(p?{company:p.company,project:p.code,type:IN}:null));break}
-    case "newProject":openSheet(projForm());break;
+      openSheet(txForm(p?{company:p.company,project:p.code,type:isEng()?"مواد":IN}:null));break}
+    case "newProject":if(!isEng())openSheet(projForm());break;
     case "editProject":openSheet(projForm(S.projects.find(x=>x.code===id)));break;
     case "toggleDone":{
       const p=S.projects.find(x=>x.code===id);if(!p)break;
