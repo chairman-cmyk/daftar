@@ -493,6 +493,7 @@ function viewReports(){
 const DRAFT="مسودة",APPROVED="معتمد",PAID="مصروف",MODE_UNIT="بسعر الوحدة",MODE_LUMP="مقطوعية",OFFICE="مصاريف مكتب";
 const canManage=()=>isAdmin()||isExec();
 const canApprove=()=>canManage()||!!(S.me&&S.me.approver);
+const canContract=()=>canManage()||!!(S.me&&S.me.canContract);
 const qf=(n,suf)=>`<bdi dir="ltr">${(Math.round((n||0)*100)/100).toLocaleString("en-US")}${suf||""}</bdi>`;
 const pc=it=>it.mode===MODE_LUMP?"%":"";
 const cObj=code=>S.contractors.find(x=>x.code===code)||{code,name:code,phone:"",specialty:""};
@@ -529,20 +530,20 @@ function contractorsSection(p){
       <div class="proj-head"><b>${esc(o.name)}</b>${o.specialty?`<span class="muted">${esc(o.specialty)}</span>`:""}${s.draft?'<span class="st st-d">مستخلص مستني اعتماد</span>':""}${s.due?'<span class="st st-a">مستحق صرف</span>':""}</div>
       <div class="dim one" aria-hidden="true"><i class="c" style="width:${pct(s.done,s.contract)}%"></i></div>
       <div class="proj-nums"><span>التعاقد<b>${fmt(s.contract)}</b></span><span>المنفذ<b class="in">${fmt(s.done)}</b></span><span>اتصرف<b class="out">${fmt(s.paid)}</b></span></div></button>`}).join("");
-  return `<h2 class="sec">المقاولين والمستخلصات${canManage()?` <button class="link" data-act="newItem" data-p="${esc(p.code)}">+ مقاول / بند</button>`:""}</h2>
-  ${cards||`<p class="empty">${canManage()?"مفيش مقاولين على المشروع لسه. اضغط \"+ مقاول / بند\" وضيف المقاول وبنود تعاقده.":"مفيش مقاولين على المشروع لسه."}</p>`}`;
+  return `<h2 class="sec">المقاولين والمستخلصات${canContract()?` <button class="link" data-act="newItem" data-p="${esc(p.code)}">+ مقاول / بند</button>`:""}</h2>
+  ${cards||`<p class="empty">${canContract()?"مفيش مقاولين على المشروع لسه. اضغط \"+ مقاول / بند\" وضيف المقاول وبنود تعاقده.":"مفيش مقاولين على المشروع لسه."}</p>`}`;
 }
 function viewCP(){
   const p=S.cp&&S.projects.find(x=>x.code===S.cp.p);if(!p){S.tab="projects";return viewProjects()}
   const c=cObj(S.cp.c),s=pairSummary(p.code,c.code);
   const doneOf=it=>S.lines.filter(l=>l.item===it.id&&S.certs.some(x=>x.id===l.cert&&x.status!==DRAFT)).reduce((a,l)=>a+l.qty,0);
-  const itemRows=s.items.map(it=>`<tr ${canManage()?`class="tap" data-act="editItem" data-id="${esc(it.id)}"`:""}><td>${esc(it.desc)}</td><td>${it.mode===MODE_LUMP?"مقطوعية":esc(it.unit)}</td><td class="n">${fmt(it.price)}</td><td class="n">${it.mode===MODE_LUMP?"100%":(it.qty?qf(it.qty):"—")}</td><td class="n">${qf(doneOf(it),pc(it))}</td><td class="n">${it.mode===MODE_LUMP||it.qty?fmt(itemFull(it)):"—"}</td></tr>`).join("");
+  const itemRows=s.items.map(it=>`<tr ${canContract()?`class="tap" data-act="editItem" data-id="${esc(it.id)}"`:""}><td>${esc(it.desc)}</td><td>${it.mode===MODE_LUMP?"مقطوعية":esc(it.unit)}</td><td class="n">${fmt(it.price)}</td><td class="n">${it.mode===MODE_LUMP?"100%":(it.qty?qf(it.qty):"—")}</td><td class="n">${qf(doneOf(it),pc(it))}</td><td class="n">${it.mode===MODE_LUMP||it.qty?fmt(itemFull(it)):"—"}</td></tr>`).join("");
   const certRows=s.certs.slice().reverse().map(x=>`<li><button class="tx-row" data-act="openCert" data-id="${esc(x.id)}"><span class="tx-type">رقم ${x.no}</span><span class="tx-main"><b>${statusTag(x.status)}</b><small>${fmtDate(x.date)}${x.preparedBy?"، أعده "+esc(x.preparedBy):""}</small></span><span class="tx-amt">${x.status===DRAFT?"":fmt(x.net)}</span></button></li>`).join("");
   return `<button class="back" data-act="open" data-id="${esc(p.code)}">→ ${esc(p.name)}</button>
   <div class="ph"><span class="tag ${cls(p.company)}">${esc(p.company)}</span><h1>${esc(c.name)}</h1><p>${esc([c.specialty,c.phone].filter(Boolean).join("، "))}</p></div>
   <div class="grid"><div><span>قيمة التعاقد</span><b>${fmt(s.contract)}</b></div><div><span>المنفذ (معتمد)</span><b class="in">${fmt(s.done)}</b></div><div><span>اتصرف للمقاول</span><b class="out">${fmt(s.paid)}</b></div><div><span>مستحق ولم يُصرف</span><b>${fmt(s.due)}</b></div><div><span>باقي من التعاقد</span><b>${fmt(Math.max(0,s.contract-s.done))}</b></div><div><span>عدد المستخلصات</span><b>${s.certs.length}</b></div></div>
-  <div class="btnrow">${s.draft?`<button class="primary" data-act="openCert" data-id="${esc(s.draft.id)}">${canApprove()?"راجع المستخلص المستني اعتماد":"عرض المستخلص المستني اعتماد"}</button>`:(s.items.length?'<button class="primary" data-act="newCert">مستخلص جديد</button>':"")}${canManage()?`<button class="ghost" data-act="newItem" data-p="${esc(p.code)}" data-c="${esc(c.code)}">+ بند</button><button class="ghost" data-act="editContractor" data-id="${esc(c.code)}">بيانات المقاول</button>`:""}</div>
-  <h2 class="sec">بنود التعاقد</h2>${itemRows?`<div class="tablewrap"><table><thead><tr><th>البند</th><th>الوحدة</th><th class="n">السعر</th><th class="n">المتعاقد</th><th class="n">المنفذ</th><th class="n">القيمة</th></tr></thead><tbody>${itemRows}</tbody></table></div>${canManage()?'<p class="muted" style="font-size:12px">اضغط على أي بند لتعديله.</p>':""}`:'<p class="empty">مفيش بنود.</p>'}
+  <div class="btnrow">${s.draft?`<button class="primary" data-act="openCert" data-id="${esc(s.draft.id)}">${canApprove()?"راجع المستخلص المستني اعتماد":"عرض المستخلص المستني اعتماد"}</button>`:(s.items.length?'<button class="primary" data-act="newCert">مستخلص جديد</button>':"")}${canContract()?`<button class="ghost" data-act="newItem" data-p="${esc(p.code)}" data-c="${esc(c.code)}">+ بند</button><button class="ghost" data-act="editContractor" data-id="${esc(c.code)}">بيانات المقاول</button>`:""}</div>
+  <h2 class="sec">بنود التعاقد</h2>${itemRows?`<div class="tablewrap"><table><thead><tr><th>البند</th><th>الوحدة</th><th class="n">السعر</th><th class="n">المتعاقد</th><th class="n">المنفذ</th><th class="n">القيمة</th></tr></thead><tbody>${itemRows}</tbody></table></div>${canContract()?'<p class="muted" style="font-size:12px">اضغط على أي بند لتعديله.</p>':""}`:'<p class="empty">مفيش بنود.</p>'}
   <h2 class="sec">المستخلصات</h2>${certRows?`<ul class="tx">${certRows}</ul>`:'<p class="empty">لسه مفيش مستخلصات.</p>'}`;
 }
 function curCert(){return S.certId?S.certs.find(x=>x.id===S.certId):S.certNew}
@@ -600,12 +601,12 @@ function viewCerts(){
   const row=x=>{const p=S.projects.find(y=>y.code===x.project);return `<li><button class="tx-row" data-act="openCert" data-id="${esc(x.id)}"><span class="tx-type">رقم ${x.no}</span><span class="tx-main"><b>${esc(cName(x.contractor))}</b><small>${esc(p?p.name:"")}، ${fmtDate(x.date)}</small></span><span class="tx-amt">${x.status===DRAFT?statusTag(x.status):fmt(x.net)}</span></button></li>`};
   const sec=(t,arr,e)=>`<h2 class="sec">${t}${arr.length?` <span class="muted" style="font-size:13px">${arr.length}</span>`:""}</h2>${arr.length?`<ul class="tx">${arr.map(row).join("")}</ul>`:`<p class="empty">${e}</p>`}`;
   const d=vis.filter(x=>x.status===DRAFT),a=vis.filter(x=>x.status===APPROVED),pd=vis.filter(x=>x.status===PAID).sort((x,y)=>(y.date||"").localeCompare(x.date||"")).slice(0,15);
-  return `<div class="toolbar"><h2 class="sec" style="margin:0;flex:1">المستخلصات</h2>${canManage()?'<button class="ghost" data-act="tab" data-v="contractors">المقاولين</button>':""}</div>
+  return `<div class="toolbar"><h2 class="sec" style="margin:0;flex:1">المستخلصات</h2>${canContract()?'<button class="ghost" data-act="tab" data-v="contractors">المقاولين</button>':""}</div>
    <p class="muted" style="font-size:13px;margin:0 0 6px">المستخلص بيتعمل من صفحة المشروع، ثم المقاول، ثم "مستخلص جديد".</p>
    ${sec(canApprove()?"محتاجة اعتماد":"مستنية اعتماد",d,"مفيش.")}${sec("معتمدة ومستنية صرف",a,"مفيش.")}${sec("آخر المستخلصات المصروفة",pd,"لسه مفيش.")}`;
 }
 function viewContractors(){
-  if(!canManage()){S.tab="certs";return viewCerts()}
+  if(!canContract()){S.tab="certs";return viewCerts()}
   const rows=S.contractors.map(c=>{const projs=new Set(S.items.filter(i=>i.contractor===c.code).map(i=>i.project));
     const paid=S.certs.filter(x=>x.contractor===c.code&&x.status===PAID).reduce((s,x)=>s+x.net,0);
     const due=S.certs.filter(x=>x.contractor===c.code&&x.status===APPROVED).reduce((s,x)=>s+x.net,0);
